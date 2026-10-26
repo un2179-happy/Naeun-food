@@ -1,0 +1,371 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="robots" content="noindex, nofollow">
+<title>금요일 저녁 메뉴 토너먼트</title>
+<style>
+  :root {
+    --bg: #fff8f0; --card: #ffffff; --ink: #3b2a20; --sub: #8a7566;
+    --accent: #ff7a45; --accent-soft: #ffe3d3; --line: #f0e2d6;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  body {
+    margin: 0; background: var(--bg); color: var(--ink);
+    font-family: -apple-system, "Apple SD Gothic Neo", "Malgun Gothic", "Noto Sans KR", sans-serif;
+    min-height: 100vh;
+  }
+  main { max-width: 640px; margin: 0 auto; padding: 24px 16px 48px; }
+  h1 { font-size: 22px; margin: 8px 0 4px; }
+  .sub { color: var(--sub); font-size: 14px; margin: 0 0 20px; }
+  .hidden { display: none !important; }
+  button { font: inherit; cursor: pointer; }
+  .btn {
+    border: 0; border-radius: 12px; padding: 14px 18px; font-weight: 700;
+    background: var(--accent); color: #fff; width: 100%; font-size: 16px;
+  }
+  .btn.ghost { background: var(--accent-soft); color: var(--accent); }
+  .btn.small { width: auto; padding: 8px 14px; font-size: 14px; }
+  .btn:disabled { opacity: .4; cursor: not-allowed; }
+  input[type=text], textarea {
+    font: inherit; border: 1px solid var(--line); border-radius: 10px;
+    padding: 10px 12px; background: #fff; color: var(--ink); width: 100%;
+  }
+  textarea { min-height: 150px; resize: vertical; }
+
+  /* setup */
+  .row { display: flex; gap: 8px; margin-bottom: 10px; }
+  .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 14px 0 6px; }
+  .chip {
+    display: flex; align-items: center; gap: 6px; padding: 8px 12px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 999px;
+    font-size: 15px; user-select: none;
+  }
+  .chip.off { opacity: .35; text-decoration: line-through; }
+  .chip .x { color: var(--sub); font-size: 13px; margin-left: 2px; }
+  .count { font-size: 14px; color: var(--sub); margin: 8px 0 16px; }
+  .link { background: none; border: 0; color: var(--sub); text-decoration: underline; padding: 12px 0; font-size: 14px; }
+
+  /* game */
+  .top { display: flex; justify-content: space-between; align-items: center; margin-bottom: 8px; }
+  .round { font-weight: 800; font-size: 18px; }
+  .bar { height: 8px; background: var(--accent-soft); border-radius: 99px; overflow: hidden; margin-bottom: 20px; }
+  .bar > i { display: block; height: 100%; background: var(--accent); width: 0; transition: width .25s; }
+  .versus { display: grid; grid-template-columns: 1fr; gap: 12px; position: relative; }
+  .pick {
+    background: var(--card); border: 2px solid var(--line); border-radius: 20px;
+    padding: 28px 12px; text-align: center; width: 100%;
+    transition: transform .12s, border-color .12s;
+  }
+  .pick:active { transform: scale(.97); border-color: var(--accent); }
+  .pick .em { font-size: 72px; line-height: 1.1; }
+  .pick .nm { font-size: 20px; font-weight: 800; margin-top: 10px; color: var(--ink); }
+  .vs { text-align: center; font-weight: 900; color: var(--accent); letter-spacing: 2px; }
+  @media (min-width: 560px) {
+    .versus { grid-template-columns: 1fr auto 1fr; align-items: center; }
+  }
+
+  /* result */
+  ol.rank { list-style: none; padding: 0; margin: 16px 0; }
+  ol.rank li {
+    display: flex; align-items: center; gap: 12px; padding: 12px 14px; margin-bottom: 8px;
+    background: var(--card); border: 1px solid var(--line); border-radius: 14px; font-size: 17px;
+  }
+  ol.rank li .no { width: 40px; font-weight: 800; color: var(--accent); }
+  ol.rank li:nth-child(1) { border: 2px solid var(--accent); font-size: 20px; font-weight: 800; }
+  ol.rank li .meta { margin-left: auto; font-size: 13px; color: var(--sub); }
+  .stack > * + * { margin-top: 10px; }
+  .toast {
+    position: fixed; left: 50%; bottom: 28px; transform: translateX(-50%);
+    background: #3b2a20; color: #fff; padding: 10px 18px; border-radius: 999px; font-size: 14px;
+  }
+  label.f { display: block; font-size: 13px; color: var(--sub); margin: 14px 0 6px; }
+</style>
+</head>
+<body>
+<main>
+
+  <!-- 설정 화면 -->
+  <section id="setup">
+    <h1>🍽️ 금요일 저녁 메뉴 토너먼트</h1>
+    <p class="sub">하나씩 골라서 끝까지 남는 메뉴를 찾아봐요</p>
+
+    <label class="f" for="who">내 이름</label>
+    <input type="text" id="who" maxlength="10" placeholder="이름">
+
+    <label class="f">메뉴 (눌러서 빼거나 다시 넣기)</label>
+    <div class="chips" id="chips"></div>
+
+    <label class="f">먹고 싶은 메뉴 추가</label>
+    <div class="row">
+      <input type="text" id="newEm" maxlength="4" placeholder="🍴" style="width:72px;text-align:center">
+      <input type="text" id="newNm" maxlength="20" placeholder="메뉴 이름">
+      <button class="btn small" id="addBtn">추가</button>
+    </div>
+
+    <div class="count" id="count"></div>
+    <div class="stack">
+      <button class="btn" id="startBtn">시작하기</button>
+      <button class="link" id="toCompare">상대 결과와 합쳐보기</button>
+    </div>
+  </section>
+
+  <!-- 게임 화면 -->
+  <section id="game" class="hidden">
+    <div class="top">
+      <span class="round" id="roundLabel"></span>
+      <button class="btn ghost small" id="undoBtn">↩ 되돌리기</button>
+    </div>
+    <div class="bar"><i id="barFill"></i></div>
+    <div class="versus">
+      <button class="pick" id="pickA"></button>
+      <div class="vs">VS</div>
+      <button class="pick" id="pickB"></button>
+    </div>
+  </section>
+
+  <!-- 결과 화면 -->
+  <section id="result" class="hidden">
+    <h1 id="resultTitle">🏆 전체 순위</h1>
+    <p class="sub">결과를 복사해서 카톡으로 보내주세요</p>
+    <ol class="rank" id="rankList"></ol>
+    <div class="stack">
+      <button class="btn" id="copyBtn">📋 결과 복사하기</button>
+      <button class="btn ghost" id="toCompare2">상대 결과와 합쳐보기</button>
+      <button class="link" id="restartBtn">처음부터 다시</button>
+    </div>
+  </section>
+
+  <!-- 합치기 화면 -->
+  <section id="compare" class="hidden">
+    <h1>🤝 결과 합치기</h1>
+    <p class="sub">두 사람이 복사한 결과를 각각 붙여넣으세요</p>
+    <label class="f" id="labelA">첫 번째 결과</label>
+    <textarea id="txtA" placeholder="[메뉴 토너먼트] ..."></textarea>
+    <label class="f" id="labelB">두 번째 결과</label>
+    <textarea id="txtB" placeholder="[메뉴 토너먼트] ..."></textarea>
+    <div class="stack" style="margin-top:14px">
+      <button class="btn" id="mergeBtn">합쳐서 보기</button>
+      <button class="link" id="backBtn">돌아가기</button>
+    </div>
+    <ol class="rank" id="mergeList"></ol>
+  </section>
+
+</main>
+<div class="toast hidden" id="toast"></div>
+
+<script>
+(() => {
+  const DEFAULTS = [
+    ['🍝','파스타 & 이탈리안'], ['🥘','스키야키'], ['🫕','샤브샤브'], ['🍕','화덕 피자'],
+    ['🍣','스시'], ['🍚','솥밥'], ['🍲','국밥'], ['🍢','양꼬치'],
+    ['🌮','멕시칸 (뇨끼, 파스타)'], ['🍗','닭갈비'], ['🍜','아시안 (쌀국수)'], ['🥩','스테이크'],
+    ['🍔','수제버거'], ['🥢','떡볶이'], ['🌶️','마라탕'], ['🥣','칼국수'],
+  ];
+  const MAX_ITEMS = 32;
+  const $ = id => document.getElementById(id);
+  const sections = ['setup', 'game', 'result', 'compare'];
+  const show = name => sections.forEach(s => $(s).classList.toggle('hidden', s !== name));
+
+  let items = DEFAULTS.map(([emoji, name], i) => ({ id: i, emoji, name, on: true }));
+  let nextId = items.length;
+  let G = null;          // game state
+  let history = [];      // undo snapshots
+  let lastRanking = null;
+
+  /* ---------- 설정 ---------- */
+  function renderSetup() {
+    $('chips').innerHTML = '';
+    items.forEach(it => {
+      const el = document.createElement('div');
+      el.className = 'chip' + (it.on ? '' : ' off');
+      el.textContent = `${it.emoji} ${it.name}`;
+      if (it.id >= DEFAULTS.length) {
+        const x = document.createElement('span');
+        x.className = 'x'; x.textContent = '✕';
+        x.onclick = e => { e.stopPropagation(); items = items.filter(i => i.id !== it.id); renderSetup(); };
+        el.appendChild(x);
+      }
+      el.onclick = () => { it.on = !it.on; renderSetup(); };
+      $('chips').appendChild(el);
+    });
+    const n = items.filter(i => i.on).length;
+    $('count').textContent = `${n}개 선택됨` + (n < 2 ? ' (최소 2개 필요)' : '');
+    $('startBtn').disabled = n < 2;
+  }
+
+  function addItem() {
+    const name = $('newNm').value.trim();
+    const emoji = $('newEm').value.trim() || '🍴';
+    if (!name) return;
+    if (items.length >= MAX_ITEMS) return toast(`최대 ${MAX_ITEMS}개까지 가능해요`);
+    if (items.some(i => i.name === name)) return toast('이미 있는 메뉴예요');
+    items.push({ id: nextId++, emoji, name, on: true });
+    $('newNm').value = ''; $('newEm').value = '';
+    renderSetup();
+  }
+
+  /* ---------- 게임 ---------- */
+  const shuffle = a => { a = a.slice(); for (let i = a.length - 1; i > 0; i--) { const j = Math.random() * (i + 1) | 0; [a[i], a[j]] = [a[j], a[i]]; } return a; };
+
+  function start() {
+    const picked = shuffle(items.filter(i => i.on));
+    let size = 2; while (size < picked.length) size *= 2;
+    // 부전승 칸은 null 로 두고, 서로 다른 대진에 흩어지도록 배치
+    const cur = new Array(size).fill(null);
+    const byes = size - picked.length;
+    const slots = shuffle([...Array(size / 2).keys()]);
+    let p = 0;
+    for (let k = 0; k < size / 2; k++) {
+      const pair = slots[k];
+      if (k < byes) { cur[pair * 2] = picked[p++]; }          // 한쪽만 채움 → 부전승
+      else { cur[pair * 2] = picked[p++]; cur[pair * 2 + 1] = picked[p++]; }
+    }
+    G = { total: picked.length, cur, next: [], idx: 0, round: 1, elim: [], played: 0, champion: null };
+    history = [];
+    skipByes();
+    show('game'); renderGame();
+  }
+
+  function skipByes() {
+    while (!G.champion) {
+      if (G.idx * 2 >= G.cur.length) {
+        if (G.next.length === 1) { G.champion = G.next[0]; return; }
+        G.cur = G.next; G.next = []; G.idx = 0; G.round++;
+        continue;
+      }
+      const a = G.cur[G.idx * 2], b = G.cur[G.idx * 2 + 1];
+      if (a && b) return;
+      G.next.push(a || b); G.idx++;
+    }
+  }
+
+  function roundName(n) { return n === 2 ? '결승' : n === 4 ? '4강' : `${n}강`; }
+
+  function renderGame() {
+    const a = G.cur[G.idx * 2], b = G.cur[G.idx * 2 + 1];
+    $('roundLabel').textContent = roundName(G.cur.length);
+    $('barFill').style.width = (G.played / (G.total - 1) * 100) + '%';
+    $('pickA').innerHTML = `<div class="em">${a.emoji}</div><div class="nm">${a.name}</div>`;
+    $('pickB').innerHTML = `<div class="em">${b.emoji}</div><div class="nm">${b.name}</div>`;
+    $('undoBtn').disabled = history.length === 0;
+  }
+
+  function pick(side) {
+    history.push(JSON.stringify(G));
+    const a = G.cur[G.idx * 2], b = G.cur[G.idx * 2 + 1];
+    const win = side === 0 ? a : b, lose = side === 0 ? b : a;
+    G.elim.push({ id: lose.id, round: G.round, by: win.id });
+    G.next.push(win); G.idx++; G.played++;
+    skipByes();
+    G.champion ? finish() : renderGame();
+  }
+
+  function undo() {
+    if (!history.length) return;
+    G = JSON.parse(history.pop());
+    renderGame();
+  }
+
+  /* ---------- 순위 ---------- */
+  // 늦게 탈락한 순 → 같은 라운드면 "나를 이긴 메뉴"의 순위가 높은 쪽이 위.
+  // 한 메뉴가 라운드마다 다른 상대를 이기므로 (이긴 메뉴, 라운드) 조합은 유일 → 동점 없는 전체 순위.
+  function computeRanking() {
+    const byId = Object.fromEntries(items.map(i => [i.id, i]));
+    const order = [G.champion.id];
+    for (let r = G.round; r >= 1; r--) {
+      G.elim.filter(e => e.round === r)
+        .sort((x, y) => order.indexOf(x.by) - order.indexOf(y.by))
+        .forEach(e => order.push(e.id));
+    }
+    return order.map(id => byId[id]);
+  }
+
+  function nameOrDefault() { return $('who').value.trim() || '나'; }
+
+  function finish() {
+    lastRanking = computeRanking();
+    $('resultTitle').textContent = `🏆 ${nameOrDefault()}의 전체 순위`;
+    $('rankList').innerHTML = lastRanking.map((it, i) =>
+      `<li><span class="no">${i + 1}위</span><span>${it.emoji} ${esc(it.name)}</span></li>`).join('');
+    show('result');
+  }
+
+  const esc = s => s.replace(/[&<>]/g, c => ({ '&': '&amp;', '<': '&lt;', '>': '&gt;' }[c]));
+
+  function resultText() {
+    return `[메뉴 토너먼트] ${nameOrDefault()}\n` +
+      lastRanking.map((it, i) => `${i + 1}위 ${it.emoji} ${it.name}`).join('\n');
+  }
+
+  async function copyResult() {
+    const text = resultText();
+    try { await navigator.clipboard.writeText(text); }
+    catch {
+      const t = document.createElement('textarea');
+      t.value = text; document.body.appendChild(t); t.select();
+      document.execCommand('copy'); t.remove();
+    }
+    toast('복사됐어요! 카톡에 붙여넣기 하세요');
+  }
+
+  /* ---------- 합치기 ---------- */
+  function parseResult(text) {
+    const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
+    const head = lines.find(l => l.startsWith('[메뉴 토너먼트]'));
+    const who = head ? head.replace('[메뉴 토너먼트]', '').trim() : '';
+    const ranks = new Map();
+    lines.forEach(l => {
+      const m = l.match(/^(\d+)\s*위\s+(.+)$/);
+      if (m) ranks.set(m[2].trim(), +m[1]);
+    });
+    return { who, ranks };
+  }
+
+  function merge() {
+    const A = parseResult($('txtA').value), B = parseResult($('txtB').value);
+    if (!A.ranks.size || !B.ranks.size) return toast('두 결과를 모두 붙여넣어 주세요');
+    const names = new Set([...A.ranks.keys(), ...B.ranks.keys()]);
+    const worstA = A.ranks.size + 1, worstB = B.ranks.size + 1;
+    const rows = [...names].map(n => {
+      const a = A.ranks.get(n) ?? worstA, b = B.ranks.get(n) ?? worstB;
+      return { n, a, b, sum: a + b, best: Math.min(a, b), gap: Math.abs(a - b) };
+    }).sort((x, y) => x.sum - y.sum || x.gap - y.gap || x.best - y.best);
+    const la = A.who || 'A', lb = B.who || 'B';
+    $('mergeList').innerHTML = rows.map((r, i) =>
+      `<li><span class="no">${i + 1}위</span><span>${esc(r.n)}</span><span class="meta">${esc(la)} ${r.a}위 · ${esc(lb)} ${r.b}위</span></li>`).join('');
+  }
+
+  function openCompare(prefillA) {
+    if (prefillA) $('txtA').value = prefillA;
+    show('compare');
+  }
+
+  /* ---------- 기타 ---------- */
+  let toastTimer;
+  function toast(msg) {
+    const t = $('toast'); t.textContent = msg; t.classList.remove('hidden');
+    clearTimeout(toastTimer); toastTimer = setTimeout(() => t.classList.add('hidden'), 2200);
+  }
+
+  $('who').value = localStorage.getItem('menuWho') || '';
+  $('who').addEventListener('input', () => localStorage.setItem('menuWho', $('who').value));
+  $('addBtn').onclick = addItem;
+  $('newNm').addEventListener('keydown', e => { if (e.key === 'Enter') addItem(); });
+  $('startBtn').onclick = start;
+  $('pickA').onclick = () => pick(0);
+  $('pickB').onclick = () => pick(1);
+  $('undoBtn').onclick = undo;
+  $('copyBtn').onclick = copyResult;
+  $('restartBtn').onclick = () => { show('setup'); renderSetup(); };
+  $('toCompare').onclick = () => openCompare();
+  $('toCompare2').onclick = () => openCompare(resultText());
+  $('backBtn').onclick = () => { show(lastRanking && G && G.champion ? 'result' : 'setup'); };
+  $('mergeBtn').onclick = merge;
+
+  renderSetup();
+})();
+</script>
+</body>
+</html>
